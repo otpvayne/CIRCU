@@ -344,3 +344,82 @@ export async function obtenerHistorialPagos(cuotaId: string): Promise<HistorialP
   if (error) throw error;
   return (data ?? []) as HistorialPago[];
 }
+
+/**
+ * Edita solo cliente_nombre y/o tasa_interes_mensual. capital_inicial, fecha_inicio y
+ * plazo_meses son inmutables tras la creación porque las cuotas ya se generaron con esos
+ * valores. Si cambia la tasa, recalcula interes_mensual/cuota_total únicamente en las
+ * cuotas "pendiente" o "vencido" — las que ya tienen pagos ("pagado"/"pagado_parcial")
+ * no se tocan.
+ */
+export async function actualizarDatosPrestamo(
+  prestamoId: string,
+  cambios: { clienteNombre?: string; tasaInteresMensual?: number }
+): Promise<Prestamo> {
+  const updates: Record<string, unknown> = {};
+  if (cambios.clienteNombre !== undefined) updates.cliente_nombre = cambios.clienteNombre;
+  if (cambios.tasaInteresMensual !== undefined) updates.tasa_interes_mensual = cambios.tasaInteresMensual;
+
+  const { data: prestamo, error: prestamoError } = await supabase
+    .from("prestamos")
+    .update(updates)
+    .eq("id", prestamoId)
+    .select()
+    .single();
+
+  if (prestamoError) throw prestamoError;
+
+  if (cambios.tasaInteresMensual !== undefined) {
+    const { data: cuotasRecalculables, error: cuotasReadError } = await supabase
+      .from("cuotas")
+      .select("*")
+      .eq("prestamo_id", prestamoId)
+      .in("estado", ["pendiente", "vencido"]);
+
+    if (cuotasReadError) throw cuotasReadError;
+
+    const nuevoInteresMensual = Number(prestamo.capital_inicial) * (cambios.tasaInteresMensual / 100);
+
+    for (const cuota of (cuotasRecalculables ?? []) as Cuota[]) {
+      const nuevaCuotaTotal = nuevoInteresMensual + Number(cuota.amortizacion_capital);
+      const { error: updateCuotaError } = await supabase
+        .from("cuotas")
+        .update({ interes_mensual: nuevoInteresMensual, cuota_total: nuevaCuotaTotal })
+        .eq("id", cuota.id);
+
+      if (updateCuotaError) throw updateCuotaError;
+    }
+  }
+
+  return prestamo as Prestamo;
+}
+
+/**
+ * Elimina el préstamo solo si ninguna cuota tiene pagos registrados. Si ya se registró
+ * algún pago, lanza un error y el llamador debe ofrecer archivarPrestamo en su lugar.
+ */
+export async function eliminarPrestamo(prestamoId: string): Promise<void> {
+  const { data: cuotasConPago, error: cuotasError } = await supabase
+    .from("cuotas")
+    .select("id")
+    .eq("prestamo_id", prestamoId)
+    .gt("monto_pagado", 0)
+    .limit(1);
+
+  if (cuotasError) throw cuotasError;
+
+  if ((cuotasConPago ?? []).length > 0) {
+    throw new Error(
+      "No se puede eliminar: este préstamo tiene cuotas con pagos registrados. Usa archivarPrestamo en su lugar."
+    );
+  }
+
+  const { error } = await supabase.from("prestamos").delete().eq("id", prestamoId);
+  if (error) throw error;
+}
+
+/** Marca el préstamo como "archivado" sin borrar nada; deja de aparecer en el listado activo. */
+export async function archivarPrestamo(prestamoId: string): Promise<void> {
+  const { error } = await supabase.from("prestamos").update({ estado: "archivado" }).eq("id", prestamoId);
+  if (error) throw error;
+}

@@ -1,4 +1,4 @@
-export type EstadoPrestamo = "activo" | "pagado_completo" | "vencido";
+export type EstadoPrestamo = "activo" | "pagado_completo" | "vencido" | "archivado";
 export type EstadoCuota = "pendiente" | "vencido" | "pagado" | "pagado_parcial";
 export type MetodoPago = "efectivo" | "transferencia" | "otro";
 

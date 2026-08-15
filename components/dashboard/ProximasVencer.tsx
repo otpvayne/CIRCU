@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { AlertCircle, Clock } from "lucide-react";
 import { formatCOP, formatDate } from "@/lib/utils";
 import type { CuotaConCliente } from "@/lib/types";
 
@@ -25,7 +26,11 @@ export default function ProximasVencer({ cuotas }: { cuotas: CuotaConCliente[] }
                 style={{ minHeight: 60 }}
               >
                 <span className="flex items-center gap-2 text-white text-base truncate">
-                  <span aria-hidden>{cuota.estado === "vencido" ? "🔴" : "🟡"}</span>
+                  {cuota.estado === "vencido" ? (
+                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0" aria-hidden />
+                  ) : (
+                    <Clock className="w-4 h-4 text-yellow-500 shrink-0" aria-hidden />
+                  )}
                   {cuota.cliente_nombre}
                 </span>
                 <span className="flex flex-col items-end shrink-0">

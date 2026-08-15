@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { obtenerHistorialPagos, obtenerPrestamoDetalle, registrarPagoCuota } from "@/lib/prestamos";
+import { Archive, ArrowLeft, CheckCircle2, Pencil, Trash2 } from "lucide-react";
+import {
+  actualizarDatosPrestamo,
+  archivarPrestamo,
+  eliminarPrestamo,
+  obtenerHistorialPagos,
+  obtenerPrestamoDetalle,
+  registrarPagoCuota,
+} from "@/lib/prestamos";
 import { estadoCuotaBadge, formatCOP, formatDate } from "@/lib/utils";
 import type { Cuota, HistorialPago, MetodoPago, Prestamo } from "@/lib/types";
 
@@ -31,6 +39,14 @@ export default function PrestamoDetallePage() {
   const [cuotaExpandida, setCuotaExpandida] = useState<string | null>(null);
   const [historialPorCuota, setHistorialPorCuota] = useState<Record<string, HistorialPago[]>>({});
   const [cargandoHistorial, setCargandoHistorial] = useState<string | null>(null);
+
+  const [editando, setEditando] = useState(false);
+  const [nombreEdit, setNombreEdit] = useState("");
+  const [tasaEdit, setTasaEdit] = useState("");
+  const [guardandoEdit, setGuardandoEdit] = useState(false);
+
+  const [eliminando, setEliminando] = useState(false);
+  const [ofrecerArchivar, setOfrecerArchivar] = useState(false);
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -112,6 +128,75 @@ export default function PrestamoDetallePage() {
     }
   }
 
+  function abrirEdicion() {
+    if (!prestamo) return;
+    setNombreEdit(prestamo.cliente_nombre);
+    setTasaEdit(String(prestamo.tasa_interes_mensual));
+    setEditando(true);
+  }
+
+  async function handleGuardarEdicion() {
+    if (!prestamo) return;
+    const nombre = nombreEdit.trim();
+    const tasa = Number(tasaEdit);
+
+    if (!nombre) {
+      setError("El nombre del cliente es obligatorio");
+      return;
+    }
+    if (!(tasa > 0)) {
+      setError("La tasa de interés debe ser mayor a 0");
+      return;
+    }
+
+    setGuardandoEdit(true);
+    setError("");
+    try {
+      await actualizarDatosPrestamo(prestamo.id, { clienteNombre: nombre, tasaInteresMensual: tasa });
+      setEditando(false);
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al actualizar el préstamo");
+    } finally {
+      setGuardandoEdit(false);
+    }
+  }
+
+  async function handleEliminar() {
+    if (!prestamo) return;
+    if (!confirm(`¿Eliminar el préstamo de ${prestamo.cliente_nombre}? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+
+    setEliminando(true);
+    setError("");
+    setOfrecerArchivar(false);
+    try {
+      await eliminarPrestamo(prestamo.id);
+      router.push("/dashboard");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al eliminar el préstamo");
+      setOfrecerArchivar(true);
+      setEliminando(false);
+    }
+  }
+
+  async function handleArchivar() {
+    if (!prestamo) return;
+    setEliminando(true);
+    setError("");
+    try {
+      await archivarPrestamo(prestamo.id);
+      setOfrecerArchivar(false);
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al archivar el préstamo");
+    } finally {
+      setEliminando(false);
+    }
+  }
+
   if (loading) return <div className="text-white text-center py-20">Cargando...</div>;
   if (!prestamo) {
     return (
@@ -127,18 +212,90 @@ export default function PrestamoDetallePage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <button onClick={() => router.push("/dashboard")} className="text-gray-400 text-sm">
-        ← Volver
+      <button
+        onClick={() => router.push("/dashboard")}
+        className="flex items-center gap-1 text-gray-400 text-sm"
+      >
+        <ArrowLeft className="w-4 h-4" /> Volver
       </button>
 
       {prestamo.estado === "pagado_completo" && (
-        <div className="bg-green-900 border border-green-700 text-green-200 px-4 py-3 rounded-lg text-center font-bold">
-          Préstamo completado ✅
+        <div className="bg-green-900 border border-green-700 text-green-200 px-4 py-3 rounded-lg text-center font-bold flex items-center justify-center gap-2">
+          <CheckCircle2 className="w-5 h-5" /> Préstamo completado
+        </div>
+      )}
+
+      {prestamo.estado === "archivado" && (
+        <div className="bg-gray-800 border border-gray-600 text-gray-300 px-4 py-3 rounded-lg text-center font-bold flex items-center justify-center gap-2">
+          <Archive className="w-5 h-5" /> Préstamo archivado — ya no recibe pagos
         </div>
       )}
 
       <div className="bg-[#1A1A1A] border border-[#2C2C2C] rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-white mb-4">{prestamo.cliente_nombre}</h2>
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <h2 className="text-2xl font-bold text-white">{prestamo.cliente_nombre}</h2>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={abrirEdicion}
+              aria-label="Editar préstamo"
+              className="p-2 rounded border border-[#2C2C2C] text-gray-300 hover:text-white hover:border-gray-500"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleEliminar}
+              disabled={eliminando}
+              aria-label="Eliminar préstamo"
+              className="p-2 rounded border border-[#2C2C2C] text-red-500 hover:bg-red-900/30 disabled:opacity-50"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {editando && (
+          <div className="mb-4 p-4 bg-[#0D0D0D] border border-[#2C2C2C] rounded-lg space-y-3">
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Nombre del cliente</label>
+              <input
+                type="text"
+                value={nombreEdit}
+                onChange={(e) => setNombreEdit(e.target.value)}
+                className="w-full px-3 py-2 bg-[#1A1A1A] border border-[#2C2C2C] rounded text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Tasa de interés mensual (%)</label>
+              <input
+                type="number"
+                step="any"
+                min={0.1}
+                value={tasaEdit}
+                onChange={(e) => setTasaEdit(e.target.value)}
+                className="w-full px-3 py-2 bg-[#1A1A1A] border border-[#2C2C2C] rounded text-white"
+              />
+              <p className="text-gray-500 text-xs mt-1">
+                Solo se recalculan las cuotas pendientes o vencidas; las que ya tienen pagos no cambian.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleGuardarEdicion}
+                disabled={guardandoEdit}
+                className="flex-1 bg-[#FF2E2E] hover:bg-red-700 text-white font-bold py-2 rounded disabled:opacity-50"
+              >
+                {guardandoEdit ? "Guardando..." : "Guardar cambios"}
+              </button>
+              <button
+                onClick={() => setEditando(false)}
+                className="px-4 py-2 border border-[#2C2C2C] text-gray-300 rounded"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-gray-400">Capital</p>
@@ -179,15 +336,25 @@ export default function PrestamoDetallePage() {
       </div>
 
       {error && (
-        <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-2 rounded text-sm">
-          {error}
+        <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-2 rounded text-sm space-y-2">
+          <p>{error}</p>
+          {ofrecerArchivar && (
+            <button
+              onClick={handleArchivar}
+              disabled={eliminando}
+              className="flex items-center gap-1.5 bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded text-sm disabled:opacity-50"
+            >
+              <Archive className="w-4 h-4" /> Archivar en su lugar
+            </button>
+          )}
         </div>
       )}
 
       <div className="space-y-3">
         {cuotas.map((cuota) => {
           const badge = estadoCuotaBadge(cuota.estado);
-          const puedePagar = cuota.estado !== "pagado";
+          const BadgeIcon = badge.icon;
+          const puedePagar = cuota.estado !== "pagado" && prestamo.estado !== "archivado";
 
           return (
             <div key={cuota.id} className="bg-[#1A1A1A] border border-[#2C2C2C] rounded-lg p-4">
@@ -201,8 +368,10 @@ export default function PrestamoDetallePage() {
                 </div>
                 <div className="text-right">
                   <p className="text-white text-lg font-bold">{formatCOP(Number(cuota.cuota_total))}</p>
-                  <span className={`text-xs px-2 py-1 rounded border whitespace-nowrap ${badge.className}`}>
-                    {badge.emoji} {badge.label}
+                  <span
+                    className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded border whitespace-nowrap ${badge.className}`}
+                  >
+                    <BadgeIcon className="w-3.5 h-3.5" /> {badge.label}
                   </span>
                 </div>
               </button>

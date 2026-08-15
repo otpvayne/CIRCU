@@ -69,7 +69,7 @@ create table if not exists public.prestamos (
   tasa_interes_mensual  numeric not null,
   plazo_meses           int not null default 6,
   fecha_inicio          date not null,
-  estado                text not null default 'activo' check (estado in ('activo', 'pagado_completo', 'vencido')),
+  estado                text not null default 'activo' check (estado in ('activo', 'pagado_completo', 'vencido', 'archivado')),
   created_at            timestamptz not null default now(),
   updated_at            timestamptz not null default now()
 );
@@ -122,6 +122,11 @@ create table if not exists public.historial_pagos (
 create index if not exists historial_pagos_cuota_id_idx on public.historial_pagos (cuota_id);
 
 alter table public.historial_pagos enable row level security;
+
+-- Allow archiving prestamos (idempotent: widens the check constraint if it already exists without 'archivado')
+alter table public.prestamos drop constraint if exists prestamos_estado_check;
+alter table public.prestamos add constraint prestamos_estado_check
+  check (estado in ('activo', 'pagado_completo', 'vencido', 'archivado'));
 
 drop policy if exists "users manage own historial_pagos" on public.historial_pagos;
 create policy "users manage own historial_pagos" on public.historial_pagos

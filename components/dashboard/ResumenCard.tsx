@@ -1,3 +1,4 @@
+import { Wallet } from "lucide-react";
 import { formatCOP } from "@/lib/utils";
 
 interface ResumenCardProps {
@@ -22,7 +23,9 @@ export default function ResumenCard({
 
   return (
     <div className="bg-[#1A1A1A] border border-[#2C2C2C] rounded-lg p-6">
-      <h3 className="text-lg font-bold text-white mb-4">💰 Resumen general</h3>
+      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+        <Wallet className="w-5 h-5 text-gray-300" /> Resumen general
+      </h3>
 
       <div className="space-y-3">
         <div className="flex justify-between items-center">
