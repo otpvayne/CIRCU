@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "motion/react";
+import { Plus } from "lucide-react";
 import { supabase } from "@/lib/db";
 import {
   actualizarEstadosCuotasVencidas,
   obtenerPrestamosConProgreso,
   obtenerResumenGeneral,
 } from "@/lib/prestamos";
+import { fadeUp } from "@/lib/motion";
 import ResumenCard from "@/components/dashboard/ResumenCard";
 import ProximasVencer from "@/components/dashboard/ProximasVencer";
 import ListaPrestamos from "@/components/dashboard/ListaPrestamos";
@@ -55,15 +58,21 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
+      <motion.div
+        custom={0}
+        initial="hidden"
+        animate="show"
+        variants={fadeUp}
+        className="flex items-center justify-between gap-3"
+      >
         <h2 className="text-2xl font-bold text-white">Dashboard</h2>
         <button
           onClick={() => router.push("/prestamos/nuevo")}
-          className="bg-[#FF2E2E] hover:bg-red-700 text-white font-bold py-3 px-5 rounded text-base whitespace-nowrap"
+          className="flex items-center gap-1.5 bg-[#FF2E2E] hover:bg-red-700 text-white font-bold py-3 px-5 rounded-lg text-base whitespace-nowrap transition-colors"
         >
-          + Registrar préstamo
+          <Plus className="w-4 h-4" /> Registrar préstamo
         </button>
-      </div>
+      </motion.div>
 
       {error && (
         <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-2 rounded text-sm">
@@ -72,19 +81,36 @@ export default function DashboardPage() {
       )}
 
       {resumen && (
-        <>
+        <motion.div custom={0.1} initial="hidden" animate="show" variants={fadeUp}>
           <ResumenCard
             capitalTotalPrestado={resumen.capitalTotalPrestado}
             totalRecuperado={resumen.totalRecuperado}
             totalPorRecuperar={resumen.totalPorRecuperar}
+            gananciaTotal={resumen.gananciaTotal}
+            gananciaProyectada={resumen.gananciaProyectada}
             cuotasVencidas={resumen.cuotasVencidas}
             cuotasPendientesHoy={resumen.cuotasPendientesHoy}
           />
-          <ProximasVencer cuotas={resumen.cuotasProximos7Dias} />
-        </>
+        </motion.div>
       )}
 
-      <ListaPrestamos prestamos={prestamos} />
+      <div className="grid gap-6 lg:grid-cols-5 items-start">
+        {resumen && (
+          <motion.div
+            custom={0.2}
+            initial="hidden"
+            animate="show"
+            variants={fadeUp}
+            className="lg:col-span-2"
+          >
+            <ProximasVencer cuotas={resumen.cuotasProximos7Dias} />
+          </motion.div>
+        )}
+
+        <motion.div custom={0.3} initial="hidden" animate="show" variants={fadeUp} className="lg:col-span-3">
+          <ListaPrestamos prestamos={prestamos} />
+        </motion.div>
+      </div>
     </div>
   );
 }

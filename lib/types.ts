@@ -52,9 +52,16 @@ export interface ResumenGeneral {
   capitalTotalPrestado: number;
   totalRecuperado: number;
   totalPorRecuperar: number;
+  gananciaTotal: number;
+  gananciaProyectada: number;
   cuotasVencidas: number;
   cuotasPendientesHoy: number;
   cuotasProximos7Dias: CuotaConCliente[];
+}
+
+export interface GananciaPrestamo {
+  gananciaCobrada: number;
+  gananciaProyectada: number;
 }
 
 export interface HistorialPago {

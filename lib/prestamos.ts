@@ -5,12 +5,22 @@ import type {
   CuotaCalculada,
   CuotaConCliente,
   EstadoCuota,
+  GananciaPrestamo,
   HistorialPago,
   MetodoPago,
   Prestamo,
   PrestamoConProgreso,
   ResumenGeneral,
 } from "./types";
+
+/** Interés efectivamente cobrado de una cuota: proporción simple de lo pagado sobre el total. */
+function interesCobradoDeCuota(c: { estado: string; monto_pagado: number; cuota_total: number; interes_mensual: number }): number {
+  if (c.estado !== "pagado" && c.estado !== "pagado_parcial") return 0;
+  const cuotaTotal = Number(c.cuota_total);
+  if (cuotaTotal <= 0) return 0;
+  const proporcion = Number(c.monto_pagado) / cuotaTotal;
+  return proporcion * Number(c.interes_mensual);
+}
 
 function toDateOnly(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -102,7 +112,7 @@ export async function crearPrestamoConCuotas(
 export async function obtenerResumenGeneral(userId: string): Promise<ResumenGeneral> {
   const { data: prestamos, error: prestamosError } = await supabase
     .from("prestamos")
-    .select("id, capital_inicial")
+    .select("id, capital_inicial, estado")
     .eq("user_id", userId);
 
   if (prestamosError) throw prestamosError;
@@ -112,12 +122,17 @@ export async function obtenerResumenGeneral(userId: string): Promise<ResumenGene
     0
   );
   const prestamoIds = (prestamos ?? []).map((p) => p.id);
+  const prestamoIdsActivos = new Set(
+    (prestamos ?? []).filter((p) => p.estado !== "archivado").map((p) => p.id)
+  );
 
   if (prestamoIds.length === 0) {
     return {
       capitalTotalPrestado: 0,
       totalRecuperado: 0,
       totalPorRecuperar: 0,
+      gananciaTotal: 0,
+      gananciaProyectada: 0,
       cuotasVencidas: 0,
       cuotasPendientesHoy: 0,
       cuotasProximos7Dias: [],
@@ -126,13 +141,22 @@ export async function obtenerResumenGeneral(userId: string): Promise<ResumenGene
 
   const { data: cuotas, error: cuotasError } = await supabase
     .from("cuotas")
-    .select("monto_pagado, fecha_vencimiento, estado")
+    .select("prestamo_id, monto_pagado, cuota_total, interes_mensual, fecha_vencimiento, estado")
     .in("prestamo_id", prestamoIds);
 
   if (cuotasError) throw cuotasError;
 
   const totalRecuperado = (cuotas ?? []).reduce((sum, c) => sum + Number(c.monto_pagado), 0);
   const totalPorRecuperar = capitalTotalPrestado - totalRecuperado;
+
+  // Ganancia ya cobrada: interés proporcional de cuotas pagadas/parciales (cualquier préstamo,
+  // incluso archivado — ese dinero ya entró al bolsillo). Proyectada: interés de TODAS las
+  // cuotas de préstamos que siguen activos (no archivados), sin importar si ya se pagaron.
+  const gananciaTotal = (cuotas ?? []).reduce((sum, c) => sum + interesCobradoDeCuota(c), 0);
+  const gananciaProyectada = (cuotas ?? []).reduce((sum, c) => {
+    if (!prestamoIdsActivos.has(c.prestamo_id)) return sum;
+    return sum + Number(c.interes_mensual);
+  }, 0);
 
   const hoy = new Date();
   const hoyStr = toDateOnly(hoy);
@@ -167,10 +191,31 @@ export async function obtenerResumenGeneral(userId: string): Promise<ResumenGene
     capitalTotalPrestado,
     totalRecuperado,
     totalPorRecuperar,
+    gananciaTotal,
+    gananciaProyectada,
     cuotasVencidas,
     cuotasPendientesHoy,
     cuotasProximos7Dias,
   };
+}
+
+export async function obtenerGananciaPrestamo(prestamoId: string): Promise<GananciaPrestamo> {
+  const { data: cuotas, error } = await supabase
+    .from("cuotas")
+    .select("monto_pagado, cuota_total, interes_mensual, estado")
+    .eq("prestamo_id", prestamoId);
+
+  if (error) throw error;
+
+  let gananciaCobrada = 0;
+  let gananciaProyectada = 0;
+
+  for (const c of cuotas ?? []) {
+    gananciaProyectada += Number(c.interes_mensual);
+    gananciaCobrada += interesCobradoDeCuota(c);
+  }
+
+  return { gananciaCobrada, gananciaProyectada };
 }
 
 export async function actualizarEstadosCuotasVencidas(userId: string): Promise<void> {

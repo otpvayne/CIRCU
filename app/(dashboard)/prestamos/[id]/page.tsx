@@ -2,17 +2,21 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Archive, ArrowLeft, CheckCircle2, Pencil, Trash2 } from "lucide-react";
+import { motion } from "motion/react";
+import { Archive, ArrowLeft, CheckCircle2, Pencil, Trash2, TrendingUp } from "lucide-react";
 import {
   actualizarDatosPrestamo,
   archivarPrestamo,
   eliminarPrestamo,
+  obtenerGananciaPrestamo,
   obtenerHistorialPagos,
   obtenerPrestamoDetalle,
   registrarPagoCuota,
 } from "@/lib/prestamos";
 import { estadoCuotaBadge, formatCOP, formatDate } from "@/lib/utils";
-import type { Cuota, HistorialPago, MetodoPago, Prestamo } from "@/lib/types";
+import { fadeUp } from "@/lib/motion";
+import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
+import type { Cuota, GananciaPrestamo, HistorialPago, MetodoPago, Prestamo } from "@/lib/types";
 
 const METODO_LABEL: Record<string, string> = {
   efectivo: "Efectivo",
@@ -26,6 +30,7 @@ export default function PrestamoDetallePage() {
 
   const [prestamo, setPrestamo] = useState<Prestamo | null>(null);
   const [cuotas, setCuotas] = useState<Cuota[]>([]);
+  const [ganancia, setGanancia] = useState<GananciaPrestamo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -52,9 +57,13 @@ export default function PrestamoDetallePage() {
     setLoading(true);
     setError("");
     try {
-      const data = await obtenerPrestamoDetalle(params.id);
+      const [data, gananciaData] = await Promise.all([
+        obtenerPrestamoDetalle(params.id),
+        obtenerGananciaPrestamo(params.id),
+      ]);
       setPrestamo(data.prestamo);
       setCuotas(data.cuotas);
+      setGanancia(gananciaData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo cargar el préstamo");
     } finally {
@@ -212,12 +221,16 @@ export default function PrestamoDetallePage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <button
+      <motion.button
+        custom={0}
+        initial="hidden"
+        animate="show"
+        variants={fadeUp}
         onClick={() => router.push("/dashboard")}
         className="flex items-center gap-1 text-gray-400 text-sm"
       >
         <ArrowLeft className="w-4 h-4" /> Volver
-      </button>
+      </motion.button>
 
       {prestamo.estado === "pagado_completo" && (
         <div className="bg-green-900 border border-green-700 text-green-200 px-4 py-3 rounded-lg text-center font-bold flex items-center justify-center gap-2">
@@ -231,7 +244,13 @@ export default function PrestamoDetallePage() {
         </div>
       )}
 
-      <div className="bg-[#1A1A1A] border border-[#2C2C2C] rounded-lg p-6">
+      <motion.div
+        custom={0.1}
+        initial="hidden"
+        animate="show"
+        variants={fadeUp}
+        className="bg-[#1A1A1A] border border-[#2C2C2C] rounded-2xl p-6"
+      >
         <div className="flex items-start justify-between gap-3 mb-4">
           <h2 className="text-2xl font-bold text-white">{prestamo.cliente_nombre}</h2>
           <div className="flex gap-2 shrink-0">
@@ -314,26 +333,66 @@ export default function PrestamoDetallePage() {
             <p className="text-white text-xl font-bold">{formatDate(prestamo.fecha_inicio)}</p>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="bg-[#1A1A1A] border border-[#2C2C2C] rounded-lg p-6">
+      {ganancia && (
+        <motion.div
+          custom={0.15}
+          initial="hidden"
+          animate="show"
+          variants={fadeUp}
+          className="relative overflow-hidden rounded-2xl border border-[#2C2C2C] bg-[#1A1A1A] p-6"
+        >
+          <div
+            className="pointer-events-none absolute -top-20 -right-10 h-56 w-56 rounded-full opacity-70 blur-3xl"
+            style={{ background: "radial-gradient(circle, rgba(255,46,46,0.16), transparent 70%)" }}
+            aria-hidden
+          />
+          <div className="relative flex items-center gap-2 text-gray-500 mb-1">
+            <TrendingUp className="w-4 h-4" />
+            <span className="text-xs font-medium uppercase tracking-widest">Ganancia de este préstamo</span>
+          </div>
+          <AnimatedNumber
+            value={ganancia.gananciaCobrada}
+            formatter={formatCOP}
+            className="relative block text-4xl sm:text-5xl font-bold text-white tabular-nums"
+          />
+          <p className="relative mt-2 text-sm text-gray-500">
+            Proyectada si se paga todo:{" "}
+            <span className="text-gray-300 font-medium">{formatCOP(ganancia.gananciaProyectada)}</span>
+          </p>
+        </motion.div>
+      )}
+
+      <motion.div
+        custom={0.2}
+        initial="hidden"
+        animate="show"
+        variants={fadeUp}
+        className="bg-[#1A1A1A] border border-[#2C2C2C] rounded-2xl p-6"
+      >
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
             <p className="text-gray-400 text-sm">Pagado hasta hoy</p>
-            <p className="text-white text-2xl font-bold">{formatCOP(totalPagado)}</p>
+            <p className="text-white text-2xl font-bold tabular-nums">{formatCOP(totalPagado)}</p>
           </div>
           <div>
             <p className="text-gray-400 text-sm">Falta pagar</p>
-            <p className="text-white text-2xl font-bold">
+            <p className="text-white text-2xl font-bold tabular-nums">
               {formatCOP(Math.max(totalAPagar - totalPagado, 0))}
             </p>
           </div>
         </div>
         <div className="h-3 bg-[#2C2C2C] rounded-full overflow-hidden">
-          <div className="h-full bg-[#FF2E2E]" style={{ width: `${progreso}%` }} />
+          <motion.div
+            className="h-full bg-[#FF2E2E]"
+            initial={{ width: 0 }}
+            animate={{ width: `${progreso}%` }}
+            transition={{ duration: 1, ease: "easeOut" }}
+          />
         </div>
         <p className="text-gray-400 text-sm mt-1">{progreso}% recuperado</p>
-      </div>
+      </motion.div>
 
       {error && (
         <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-2 rounded text-sm space-y-2">
@@ -350,14 +409,14 @@ export default function PrestamoDetallePage() {
         </div>
       )}
 
-      <div className="space-y-3">
+      <motion.div custom={0.3} initial="hidden" animate="show" variants={fadeUp} className="space-y-3">
         {cuotas.map((cuota) => {
           const badge = estadoCuotaBadge(cuota.estado);
           const BadgeIcon = badge.icon;
           const puedePagar = cuota.estado !== "pagado" && prestamo.estado !== "archivado";
 
           return (
-            <div key={cuota.id} className="bg-[#1A1A1A] border border-[#2C2C2C] rounded-lg p-4">
+            <div key={cuota.id} className="bg-[#1A1A1A] border border-[#2C2C2C] rounded-2xl p-4">
               <button
                 onClick={() => toggleHistorial(cuota.id)}
                 className="w-full flex justify-between items-center gap-3 text-left"
@@ -369,7 +428,9 @@ export default function PrestamoDetallePage() {
                 <div className="text-right">
                   <p className="text-white text-lg font-bold">{formatCOP(Number(cuota.cuota_total))}</p>
                   <span
-                    className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded border whitespace-nowrap ${badge.className}`}
+                    className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded border whitespace-nowrap ${badge.className} ${
+                      cuota.estado === "vencido" ? "animate-pulse-glow-red" : ""
+                    }`}
                   >
                     <BadgeIcon className="w-3.5 h-3.5" /> {badge.label}
                   </span>
@@ -471,7 +532,7 @@ export default function PrestamoDetallePage() {
             </div>
           );
         })}
-      </div>
+      </motion.div>
     </div>
   );
 }
