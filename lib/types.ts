@@ -1,47 +1,76 @@
-export type EstadoPrestamo = "activo" | "finalizado" | "moroso";
-export type EstadoCuota = "pendiente" | "pagada" | "vencida";
+export type EstadoPrestamo = "activo" | "pagado_completo" | "vencido";
+export type EstadoCuota = "pendiente" | "vencido" | "pagado" | "pagado_parcial";
 export type MetodoPago = "efectivo" | "transferencia" | "otro";
 
 export interface Prestamo {
   id: string;
-  userId: string;
-  clienteNombre: string;
-  capitalInicial: number;
-  tasaInteresMensual: number;
-  plazoMeses: number;
-  fechaInicio: string;
+  user_id: string;
+  cliente_nombre: string;
+  capital_inicial: number;
+  tasa_interes_mensual: number;
+  plazo_meses: number;
+  fecha_inicio: string;
   estado: EstadoPrestamo;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Cuota {
   id: string;
-  prestamoId: string;
+  prestamo_id: string;
   mes: number;
-  fechaVencimiento: string;
+  fecha_vencimiento: string;
+  interes_mensual: number;
+  amortizacion_capital: number;
+  cuota_total: number;
+  monto_pagado: number;
+  fecha_pago: string | null;
+  estado: EstadoCuota;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CuotaCalculada {
+  mes: number;
+  fechaVencimiento: Date;
   interesMensual: number;
   amortizacionCapital: number;
   cuotaTotal: number;
-  montoPagado: number;
-  fechaPago: string | null;
-  estado: EstadoCuota;
+}
+
+export interface CuotaConCliente extends Cuota {
+  cliente_nombre: string;
+}
+
+export interface PrestamoConProgreso extends Prestamo {
+  progreso: number;
+  totalAPagar: number;
+  totalRecuperado: number;
+}
+
+export interface ResumenGeneral {
+  capitalTotalPrestado: number;
+  totalRecuperado: number;
+  totalPorRecuperar: number;
+  cuotasVencidas: number;
+  cuotasPendientesHoy: number;
+  cuotasProximos7Dias: CuotaConCliente[];
 }
 
 export interface HistorialPago {
   id: string;
-  cuotaId: string;
+  cuota_id: string;
   monto: number;
-  fechaPago: string;
+  fecha_pago: string;
   metodo: MetodoPago;
   notas?: string | null;
 }
 
 export interface Documento {
   id: string;
-  prestamoId: string;
-  nombreArchivo: string;
-  urlArchivo: string;
-  tipoArchivo: string;
+  prestamo_id: string;
+  nombre_archivo: string;
+  url_archivo: string;
+  tipo_archivo: string;
   tamaño: number;
 }

@@ -58,3 +58,51 @@ create policy "subscriptions_insert_self" on public.subscriptions
 drop policy if exists "subscriptions_update_admin_only" on public.subscriptions;
 create policy "subscriptions_update_admin_only" on public.subscriptions
   for update using (public.is_admin()) with check (public.is_admin());
+
+-- Préstamos y cuotas
+
+create table if not exists public.prestamos (
+  id                    uuid primary key default gen_random_uuid(),
+  user_id               uuid not null references auth.users (id) on delete cascade,
+  cliente_nombre        text not null,
+  capital_inicial       numeric not null,
+  tasa_interes_mensual  numeric not null,
+  plazo_meses           int not null default 6,
+  fecha_inicio          date not null,
+  estado                text not null default 'activo' check (estado in ('activo', 'pagado_completo', 'vencido')),
+  created_at            timestamptz not null default now(),
+  updated_at            timestamptz not null default now()
+);
+
+create table if not exists public.cuotas (
+  id                    uuid primary key default gen_random_uuid(),
+  prestamo_id           uuid not null references public.prestamos (id) on delete cascade,
+  mes                   int not null,
+  fecha_vencimiento     date not null,
+  interes_mensual       numeric not null,
+  amortizacion_capital  numeric not null,
+  cuota_total           numeric not null,
+  monto_pagado          numeric not null default 0,
+  fecha_pago            timestamptz,
+  estado                text not null default 'pendiente' check (estado in ('pendiente', 'pagado', 'pagado_parcial', 'vencido')),
+  created_at            timestamptz not null default now(),
+  updated_at            timestamptz not null default now()
+);
+
+create index if not exists cuotas_prestamo_id_idx on public.cuotas (prestamo_id);
+create index if not exists prestamos_user_id_idx on public.prestamos (user_id);
+
+alter table public.prestamos enable row level security;
+alter table public.cuotas enable row level security;
+
+drop policy if exists "users manage own prestamos" on public.prestamos;
+create policy "users manage own prestamos" on public.prestamos
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "users manage own cuotas" on public.cuotas;
+create policy "users manage own cuotas" on public.cuotas
+  for all using (
+    exists (select 1 from public.prestamos where prestamos.id = cuotas.prestamo_id and prestamos.user_id = auth.uid())
+  ) with check (
+    exists (select 1 from public.prestamos where prestamos.id = cuotas.prestamo_id and prestamos.user_id = auth.uid())
+  );
