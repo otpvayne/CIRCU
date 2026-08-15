@@ -20,7 +20,7 @@ export default function ProximasVencer({ cuotas }: { cuotas: CuotaConCliente[] }
           {cuotas.map((cuota) => (
             <li key={cuota.id} className="border-t border-[#2C2C2C]">
               <button
-                onClick={() => router.push(`/dashboard/prestamos/${cuota.prestamo_id}`)}
+                onClick={() => router.push(`/prestamos/${cuota.prestamo_id}`)}
                 className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left"
                 style={{ minHeight: 60 }}
               >

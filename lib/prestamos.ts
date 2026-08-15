@@ -5,6 +5,8 @@ import type {
   CuotaCalculada,
   CuotaConCliente,
   EstadoCuota,
+  HistorialPago,
+  MetodoPago,
   Prestamo,
   PrestamoConProgreso,
   ResumenGeneral,
@@ -254,7 +256,9 @@ export async function registrarPagoCuota(
   cuota: Cuota,
   fechaInicioPrestamo: string,
   montoPagado: number,
-  fechaPago: Date
+  fechaPago: Date,
+  metodo: MetodoPago = "efectivo",
+  notas?: string
 ): Promise<Cuota> {
   const fechaVencimiento = new Date(cuota.fecha_vencimiento);
   const fechaInicioMes = addMonths(new Date(fechaInicioPrestamo), cuota.mes - 1);
@@ -271,7 +275,15 @@ export async function registrarPagoCuota(
   }
 
   const montoTotalPagado = Number(cuota.monto_pagado) + montoPagado;
-  const estado: EstadoCuota = montoTotalPagado >= cuotaTotalAjustada ? "pagado" : "pagado_parcial";
+
+  let estado: EstadoCuota;
+  if (montoTotalPagado >= cuotaTotalAjustada) {
+    estado = "pagado";
+  } else if (montoTotalPagado > 0) {
+    estado = "pagado_parcial";
+  } else {
+    estado = cuota.estado;
+  }
 
   const { data, error } = await supabase
     .from("cuotas")
@@ -286,5 +298,49 @@ export async function registrarPagoCuota(
     .single();
 
   if (error) throw error;
+
+  const { error: historialError } = await supabase.from("historial_pagos").insert([
+    {
+      cuota_id: cuota.id,
+      monto: montoPagado,
+      fecha_pago: fechaPago.toISOString(),
+      metodo,
+      notas: notas ?? null,
+    },
+  ]);
+
+  if (historialError) throw historialError;
+
+  if (estado === "pagado") {
+    const { data: cuotasPrestamo, error: cuotasError } = await supabase
+      .from("cuotas")
+      .select("estado")
+      .eq("prestamo_id", cuota.prestamo_id);
+
+    if (cuotasError) throw cuotasError;
+
+    const todasPagadas = (cuotasPrestamo ?? []).every((c) => c.estado === "pagado");
+
+    if (todasPagadas) {
+      const { error: prestamoError } = await supabase
+        .from("prestamos")
+        .update({ estado: "pagado_completo" })
+        .eq("id", cuota.prestamo_id);
+
+      if (prestamoError) throw prestamoError;
+    }
+  }
+
   return data as Cuota;
+}
+
+export async function obtenerHistorialPagos(cuotaId: string): Promise<HistorialPago[]> {
+  const { data, error } = await supabase
+    .from("historial_pagos")
+    .select("*")
+    .eq("cuota_id", cuotaId)
+    .order("fecha_pago", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as HistorialPago[];
 }

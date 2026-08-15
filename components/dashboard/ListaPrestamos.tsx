@@ -30,7 +30,7 @@ export default function ListaPrestamos({ prestamos }: { prestamos: PrestamoConPr
         {prestamos.map((p) => (
           <button
             key={p.id}
-            onClick={() => router.push(`/dashboard/prestamos/${p.id}`)}
+            onClick={() => router.push(`/prestamos/${p.id}`)}
             className="w-full text-left bg-[#0D0D0D] border border-[#2C2C2C] rounded-lg p-4"
           >
             <div className="flex justify-between items-start mb-2 gap-2">
@@ -61,7 +61,7 @@ export default function ListaPrestamos({ prestamos }: { prestamos: PrestamoConPr
           {prestamos.map((p) => (
             <tr
               key={p.id}
-              onClick={() => router.push(`/dashboard/prestamos/${p.id}`)}
+              onClick={() => router.push(`/prestamos/${p.id}`)}
               className="cursor-pointer border-b border-[#2C2C2C] hover:bg-[#0D0D0D]"
             >
               <td className="py-3 text-white">{p.cliente_nombre}</td>

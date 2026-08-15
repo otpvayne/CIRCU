@@ -106,3 +106,37 @@ create policy "users manage own cuotas" on public.cuotas
   ) with check (
     exists (select 1 from public.prestamos where prestamos.id = cuotas.prestamo_id and prestamos.user_id = auth.uid())
   );
+
+-- Historial de pagos
+
+create table if not exists public.historial_pagos (
+  id          uuid primary key default gen_random_uuid(),
+  cuota_id    uuid not null references public.cuotas (id) on delete cascade,
+  monto       numeric not null,
+  fecha_pago  timestamptz not null,
+  metodo      text not null default 'efectivo' check (metodo in ('efectivo', 'transferencia', 'otro')),
+  notas       text,
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists historial_pagos_cuota_id_idx on public.historial_pagos (cuota_id);
+
+alter table public.historial_pagos enable row level security;
+
+drop policy if exists "users manage own historial_pagos" on public.historial_pagos;
+create policy "users manage own historial_pagos" on public.historial_pagos
+  for all using (
+    exists (
+      select 1
+      from public.cuotas
+      join public.prestamos on prestamos.id = cuotas.prestamo_id
+      where cuotas.id = historial_pagos.cuota_id and prestamos.user_id = auth.uid()
+    )
+  ) with check (
+    exists (
+      select 1
+      from public.cuotas
+      join public.prestamos on prestamos.id = cuotas.prestamo_id
+      where cuotas.id = historial_pagos.cuota_id and prestamos.user_id = auth.uid()
+    )
+  );

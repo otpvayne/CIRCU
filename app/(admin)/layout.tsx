@@ -17,10 +17,10 @@ export default function AdminLayout({
   useEffect(() => {
     async function checkAdmin() {
       const {
-        data: { session },
-      } = await supabase.auth.getSession();
+        data: { user },
+      } = await supabase.auth.getUser();
 
-      if (!session) {
+      if (!user) {
         router.push("/sign-in");
         return;
       }
@@ -28,7 +28,7 @@ export default function AdminLayout({
       const { data } = await supabase
         .from("users")
         .select("rol")
-        .eq("id", session.user.id)
+        .eq("id", user.id)
         .maybeSingle();
 
       if (data?.rol === "admin") {

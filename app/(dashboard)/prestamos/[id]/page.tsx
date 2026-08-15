@@ -2,9 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { obtenerPrestamoDetalle, registrarPagoCuota } from "@/lib/prestamos";
+import { obtenerHistorialPagos, obtenerPrestamoDetalle, registrarPagoCuota } from "@/lib/prestamos";
 import { estadoCuotaBadge, formatCOP, formatDate } from "@/lib/utils";
-import type { Cuota, Prestamo } from "@/lib/types";
+import type { Cuota, HistorialPago, Prestamo } from "@/lib/types";
+
+const METODO_LABEL: Record<string, string> = {
+  efectivo: "Efectivo",
+  transferencia: "Transferencia",
+  otro: "Otro",
+};
 
 export default function PrestamoDetallePage() {
   const params = useParams<{ id: string }>();
@@ -19,6 +25,10 @@ export default function PrestamoDetallePage() {
   const [montoPago, setMontoPago] = useState("");
   const [fechaPago, setFechaPago] = useState(() => new Date().toISOString().slice(0, 10));
   const [guardando, setGuardando] = useState(false);
+
+  const [cuotaExpandida, setCuotaExpandida] = useState<string | null>(null);
+  const [historialPorCuota, setHistorialPorCuota] = useState<Record<string, HistorialPago[]>>({});
+  const [cargandoHistorial, setCargandoHistorial] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -38,6 +48,27 @@ export default function PrestamoDetallePage() {
     cargar();
   }, [cargar]);
 
+  async function toggleHistorial(cuotaId: string) {
+    if (cuotaExpandida === cuotaId) {
+      setCuotaExpandida(null);
+      return;
+    }
+
+    setCuotaExpandida(cuotaId);
+
+    if (!historialPorCuota[cuotaId]) {
+      setCargandoHistorial(cuotaId);
+      try {
+        const pagos = await obtenerHistorialPagos(cuotaId);
+        setHistorialPorCuota((prev) => ({ ...prev, [cuotaId]: pagos }));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "No se pudo cargar el historial de pagos");
+      } finally {
+        setCargandoHistorial(null);
+      }
+    }
+  }
+
   async function handleRegistrarPago(cuota: Cuota) {
     if (!prestamo) return;
     const monto = Number(montoPago);
@@ -52,6 +83,11 @@ export default function PrestamoDetallePage() {
       await registrarPagoCuota(cuota, prestamo.fecha_inicio, monto, new Date(fechaPago));
       setCuotaEnPago(null);
       setMontoPago("");
+      setHistorialPorCuota((prev) => {
+        const next = { ...prev };
+        delete next[cuota.id];
+        return next;
+      });
       await cargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al registrar el pago");
@@ -78,6 +114,12 @@ export default function PrestamoDetallePage() {
       <button onClick={() => router.push("/dashboard")} className="text-gray-400 text-sm">
         ← Volver
       </button>
+
+      {prestamo.estado === "pagado_completo" && (
+        <div className="bg-green-900 border border-green-700 text-green-200 px-4 py-3 rounded-lg text-center font-bold">
+          Préstamo completado ✅
+        </div>
+      )}
 
       <div className="bg-[#1A1A1A] border border-[#2C2C2C] rounded-lg p-6">
         <h2 className="text-2xl font-bold text-white mb-4">{prestamo.cliente_nombre}</h2>
@@ -133,7 +175,10 @@ export default function PrestamoDetallePage() {
 
           return (
             <div key={cuota.id} className="bg-[#1A1A1A] border border-[#2C2C2C] rounded-lg p-4">
-              <div className="flex justify-between items-center gap-3">
+              <button
+                onClick={() => toggleHistorial(cuota.id)}
+                className="w-full flex justify-between items-center gap-3 text-left"
+              >
                 <div>
                   <p className="text-white font-bold">Mes {cuota.mes}</p>
                   <p className="text-gray-400 text-sm">{formatDate(cuota.fecha_vencimiento)}</p>
@@ -144,7 +189,30 @@ export default function PrestamoDetallePage() {
                     {badge.emoji} {badge.label}
                   </span>
                 </div>
-              </div>
+              </button>
+
+              {cuotaExpandida === cuota.id && (
+                <div className="mt-3 pt-3 border-t border-[#2C2C2C]">
+                  {cargandoHistorial === cuota.id ? (
+                    <p className="text-gray-400 text-sm">Cargando historial...</p>
+                  ) : (historialPorCuota[cuota.id]?.length ?? 0) === 0 ? (
+                    <p className="text-gray-400 text-sm">Sin pagos registrados todavía.</p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {historialPorCuota[cuota.id].map((pago) => (
+                        <li
+                          key={pago.id}
+                          className="flex justify-between items-center text-sm text-gray-300"
+                        >
+                          <span>{formatDate(pago.fecha_pago)}</span>
+                          <span>{METODO_LABEL[pago.metodo] ?? pago.metodo}</span>
+                          <span className="text-white font-medium">{formatCOP(Number(pago.monto))}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
 
               {puedePagar && (
                 <div className="mt-3">

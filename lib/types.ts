@@ -64,6 +64,7 @@ export interface HistorialPago {
   fecha_pago: string;
   metodo: MetodoPago;
   notas?: string | null;
+  created_at: string;
 }
 
 export interface Documento {

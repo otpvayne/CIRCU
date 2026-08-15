@@ -38,19 +38,19 @@ export default function FormNuevoPrestamo() {
     setLoading(true);
     try {
       const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) throw new Error("No hay sesión activa");
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("No hay sesión activa");
 
       const { prestamo } = await crearPrestamoConCuotas(
-        session.user.id,
+        user.id,
         clienteNombre.trim(),
         capital,
         tasa,
         new Date(fechaInicio)
       );
 
-      router.push(`/dashboard/prestamos/${prestamo.id}`);
+      router.push(`/prestamos/${prestamo.id}`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al registrar el préstamo");

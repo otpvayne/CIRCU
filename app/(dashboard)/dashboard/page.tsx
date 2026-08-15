@@ -23,19 +23,19 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadDashboard() {
       const {
-        data: { session },
-      } = await supabase.auth.getSession();
+        data: { user },
+      } = await supabase.auth.getUser();
 
-      if (!session) {
+      if (!user) {
         setLoading(false);
         return;
       }
 
       try {
-        await actualizarEstadosCuotasVencidas(session.user.id);
+        await actualizarEstadosCuotasVencidas(user.id);
         const [resumenData, prestamosData] = await Promise.all([
-          obtenerResumenGeneral(session.user.id),
-          obtenerPrestamosConProgreso(session.user.id),
+          obtenerResumenGeneral(user.id),
+          obtenerPrestamosConProgreso(user.id),
         ]);
         setResumen(resumenData);
         setPrestamos(prestamosData);
@@ -58,7 +58,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-2xl font-bold text-white">Dashboard</h2>
         <button
-          onClick={() => router.push("/dashboard/prestamos/nuevo")}
+          onClick={() => router.push("/prestamos/nuevo")}
           className="bg-[#FF2E2E] hover:bg-red-700 text-white font-bold py-3 px-5 rounded text-base whitespace-nowrap"
         >
           + Registrar préstamo
