@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { signInUser } from "@/lib/auth";
 import { LoadingDots } from "@/components/ui/LoadingDots";
 
@@ -32,7 +33,9 @@ export default function SignInPage() {
     <div className="flex items-center justify-center min-h-screen bg-black">
       <div className="w-full max-w-md px-4">
         <div className="bg-[#1A1A1A] border border-[#2C2C2C] rounded-lg p-8">
-          <h1 className="text-3xl font-bold text-white mb-2">CIRCU</h1>
+          <div className="flex justify-center mb-4">
+            <Image src="/icons/icon-512.png" alt="CIRCU" width={64} height={64} className="rounded-xl" priority />
+          </div>
           <p className="text-gray-400 mb-6">Control de préstamos y capital</p>
 
           <form onSubmit={handleSignIn} className="space-y-4">

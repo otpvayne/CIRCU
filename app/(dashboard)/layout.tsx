@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { signOutUser } from "@/lib/auth";
 import { useState } from "react";
 import { LoadingDots } from "@/components/ui/LoadingDots";
@@ -29,7 +30,7 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen">
       <nav className="flex justify-between items-center p-4 bg-[#0D0D0D] border-b border-[#2C2C2C]">
-        <h1 className="text-2xl font-bold text-white">CIRCU</h1>
+        <Image src="/icons/icon-512.png" alt="CIRCU" width={36} height={36} className="rounded-lg" priority />
         <button
           onClick={handleLogout}
           disabled={loading}

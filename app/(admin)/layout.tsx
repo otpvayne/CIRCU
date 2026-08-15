@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { signOutUser } from "@/lib/auth";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/db";
@@ -58,7 +59,10 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen">
       <nav className="flex justify-between items-center p-4 bg-[#0D0D0D] border-b border-[#FF2E2E]">
-        <h1 className="text-2xl font-bold text-[#FF2E2E]">CIRCU — ADMIN</h1>
+        <div className="flex items-center gap-2.5">
+          <Image src="/icons/icon-512.png" alt="CIRCU" width={32} height={32} className="rounded-lg" priority />
+          <span className="text-xl font-bold text-[#FF2E2E] tracking-wide">ADMIN</span>
+        </div>
         <button
           onClick={handleLogout}
           className="bg-[#FF2E2E] hover:bg-red-700 text-white px-4 py-2 rounded text-sm"

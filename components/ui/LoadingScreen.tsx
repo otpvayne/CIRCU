@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import Image from "next/image";
 import { LoadingDots } from "./LoadingDots";
 
 interface LoadingScreenProps {
@@ -11,13 +12,12 @@ interface LoadingScreenProps {
 export function LoadingScreen({ message }: LoadingScreenProps) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-5 px-4">
-      <motion.span
+      <motion.div
         animate={{ scale: [1, 1.03, 1], opacity: [0.85, 1, 0.85] }}
         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        className="text-4xl sm:text-5xl font-bold tracking-[0.2em] text-white"
       >
-        CIRCU
-      </motion.span>
+        <Image src="/icons/icon-512.png" alt="CIRCU" width={88} height={88} className="rounded-2xl" priority />
+      </motion.div>
       <LoadingDots />
       {message && <p className="text-gray-500 text-sm text-center">{message}</p>}
     </div>
