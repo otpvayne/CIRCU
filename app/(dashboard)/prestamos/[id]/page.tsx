@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { obtenerHistorialPagos, obtenerPrestamoDetalle, registrarPagoCuota } from "@/lib/prestamos";
 import { estadoCuotaBadge, formatCOP, formatDate } from "@/lib/utils";
-import type { Cuota, HistorialPago, Prestamo } from "@/lib/types";
+import type { Cuota, HistorialPago, MetodoPago, Prestamo } from "@/lib/types";
 
 const METODO_LABEL: Record<string, string> = {
   efectivo: "Efectivo",
@@ -24,6 +24,8 @@ export default function PrestamoDetallePage() {
   const [cuotaEnPago, setCuotaEnPago] = useState<string | null>(null);
   const [montoPago, setMontoPago] = useState("");
   const [fechaPago, setFechaPago] = useState(() => new Date().toISOString().slice(0, 10));
+  const [metodoPago, setMetodoPago] = useState<MetodoPago>("efectivo");
+  const [bancoDestino, setBancoDestino] = useState("");
   const [guardando, setGuardando] = useState(false);
 
   const [cuotaExpandida, setCuotaExpandida] = useState<string | null>(null);
@@ -69,6 +71,14 @@ export default function PrestamoDetallePage() {
     }
   }
 
+  function resetFormularioPago() {
+    setCuotaEnPago(null);
+    setMontoPago("");
+    setFechaPago(new Date().toISOString().slice(0, 10));
+    setMetodoPago("efectivo");
+    setBancoDestino("");
+  }
+
   async function handleRegistrarPago(cuota: Cuota) {
     if (!prestamo) return;
     const monto = Number(montoPago);
@@ -80,9 +90,15 @@ export default function PrestamoDetallePage() {
     setGuardando(true);
     setError("");
     try {
-      await registrarPagoCuota(cuota, prestamo.fecha_inicio, monto, new Date(fechaPago));
-      setCuotaEnPago(null);
-      setMontoPago("");
+      await registrarPagoCuota(
+        cuota,
+        prestamo.fecha_inicio,
+        monto,
+        new Date(fechaPago),
+        metodoPago,
+        bancoDestino || undefined
+      );
+      resetFormularioPago();
       setHistorialPorCuota((prev) => {
         const next = { ...prev };
         delete next[cuota.id];
@@ -200,13 +216,15 @@ export default function PrestamoDetallePage() {
                   ) : (
                     <ul className="space-y-1">
                       {historialPorCuota[cuota.id].map((pago) => (
-                        <li
-                          key={pago.id}
-                          className="flex justify-between items-center text-sm text-gray-300"
-                        >
-                          <span>{formatDate(pago.fecha_pago)}</span>
-                          <span>{METODO_LABEL[pago.metodo] ?? pago.metodo}</span>
-                          <span className="text-white font-medium">{formatCOP(Number(pago.monto))}</span>
+                        <li key={pago.id} className="text-sm text-gray-300">
+                          <div className="flex justify-between items-center">
+                            <span>{formatDate(pago.fecha_pago)}</span>
+                            <span>
+                              {METODO_LABEL[pago.metodo] ?? pago.metodo}
+                              {pago.notas ? ` (${pago.notas})` : ""}
+                            </span>
+                            <span className="text-white font-medium">{formatCOP(Number(pago.monto))}</span>
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -232,6 +250,24 @@ export default function PrestamoDetallePage() {
                         onChange={(e) => setFechaPago(e.target.value)}
                         className="w-full px-3 py-2 bg-[#0D0D0D] border border-[#2C2C2C] rounded text-white"
                       />
+                      <select
+                        value={metodoPago}
+                        onChange={(e) => setMetodoPago(e.target.value as MetodoPago)}
+                        className="w-full px-4 py-3 bg-[#0D0D0D] border border-[#2C2C2C] rounded text-white text-base focus:outline-none focus:border-[#FF2E2E]"
+                      >
+                        <option value="efectivo">Efectivo</option>
+                        <option value="transferencia">Transferencia</option>
+                        <option value="otro">Otro</option>
+                      </select>
+                      {metodoPago === "transferencia" && (
+                        <input
+                          type="text"
+                          placeholder="Banco o cuenta (ej: Bancolombia, Nequi)"
+                          value={bancoDestino}
+                          onChange={(e) => setBancoDestino(e.target.value)}
+                          className="w-full px-4 py-3 bg-[#0D0D0D] border border-[#2C2C2C] rounded text-white text-base focus:outline-none focus:border-[#FF2E2E] mt-2"
+                        />
+                      )}
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleRegistrarPago(cuota)}
@@ -241,7 +277,7 @@ export default function PrestamoDetallePage() {
                           {guardando ? "Guardando..." : "Confirmar pago"}
                         </button>
                         <button
-                          onClick={() => setCuotaEnPago(null)}
+                          onClick={resetFormularioPago}
                           className="px-4 py-2 border border-[#2C2C2C] text-gray-300 rounded"
                         >
                           Cancelar
@@ -253,6 +289,8 @@ export default function PrestamoDetallePage() {
                       onClick={() => {
                         setCuotaEnPago(cuota.id);
                         setMontoPago(String(Number(cuota.cuota_total) - Number(cuota.monto_pagado)));
+                        setMetodoPago("efectivo");
+                        setBancoDestino("");
                       }}
                       className="w-full bg-[#2C2C2C] hover:bg-[#3a3a3a] text-white font-bold py-2 rounded"
                     >
