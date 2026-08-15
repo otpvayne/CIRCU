@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signUpUser } from "@/lib/auth";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("");
@@ -75,7 +76,7 @@ export default function SignUpPage() {
               disabled={loading}
               className="w-full bg-[#FF2E2E] hover:bg-red-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
             >
-              {loading ? "Registrando..." : "Registrarse"}
+              {loading ? <LoadingDots size={6} color="#fff" className="mx-auto" /> : "Registrarse"}
             </button>
           </form>
         </div>

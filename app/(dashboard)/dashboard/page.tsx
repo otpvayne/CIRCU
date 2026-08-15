@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { Plus } from "lucide-react";
+import { Calculator, Plus } from "lucide-react";
 import { supabase } from "@/lib/db";
 import {
   actualizarEstadosCuotasVencidas,
@@ -14,6 +14,7 @@ import { fadeUp } from "@/lib/motion";
 import ResumenCard from "@/components/dashboard/ResumenCard";
 import ProximasVencer from "@/components/dashboard/ProximasVencer";
 import ListaPrestamos from "@/components/dashboard/ListaPrestamos";
+import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import type { PrestamoConProgreso, ResumenGeneral } from "@/lib/types";
 
 export default function DashboardPage() {
@@ -53,7 +54,7 @@ export default function DashboardPage() {
   }, []);
 
   if (loading) {
-    return <div className="text-white text-center py-20">Cargando...</div>;
+    return <LoadingScreen message="Cargando tus préstamos..." />;
   }
 
   return (
@@ -63,15 +64,23 @@ export default function DashboardPage() {
         initial="hidden"
         animate="show"
         variants={fadeUp}
-        className="flex items-center justify-between gap-3"
+        className="flex items-center justify-between gap-3 flex-wrap"
       >
         <h2 className="text-2xl font-bold text-white">Dashboard</h2>
-        <button
-          onClick={() => router.push("/prestamos/nuevo")}
-          className="flex items-center gap-1.5 bg-[#FF2E2E] hover:bg-red-700 text-white font-bold py-3 px-5 rounded-lg text-base whitespace-nowrap transition-colors"
-        >
-          <Plus className="w-4 h-4" /> Registrar préstamo
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.push("/simulador")}
+            className="flex items-center gap-1.5 border border-[#2C2C2C] text-gray-300 hover:text-white hover:border-gray-500 font-medium py-3 px-4 rounded-lg text-sm whitespace-nowrap transition-colors"
+          >
+            <Calculator className="w-4 h-4" /> Simular préstamo
+          </button>
+          <button
+            onClick={() => router.push("/prestamos/nuevo")}
+            className="flex items-center gap-1.5 bg-[#FF2E2E] hover:bg-red-700 text-white font-bold py-3 px-5 rounded-lg text-base whitespace-nowrap transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Registrar préstamo
+          </button>
+        </div>
       </motion.div>
 
       {error && (

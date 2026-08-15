@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { signOutUser } from "@/lib/auth";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/db";
+import { LoadingScreen } from "@/components/ui/LoadingScreen";
 
 export default function AdminLayout({
   children,
@@ -50,14 +51,12 @@ export default function AdminLayout({
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen text-white">Cargando...</div>
-    );
+    return <LoadingScreen message="Verificando acceso..." />;
   }
   if (!isAdmin) return null;
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen">
       <nav className="flex justify-between items-center p-4 bg-[#0D0D0D] border-b border-[#FF2E2E]">
         <h1 className="text-2xl font-bold text-[#FF2E2E]">CIRCU — ADMIN</h1>
         <button

@@ -16,6 +16,8 @@ import {
 import { estadoCuotaBadge, formatCOP, formatDate } from "@/lib/utils";
 import { fadeUp } from "@/lib/motion";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
+import { LoadingDots } from "@/components/ui/LoadingDots";
+import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import type { Cuota, GananciaPrestamo, HistorialPago, MetodoPago, Prestamo } from "@/lib/types";
 
 const METODO_LABEL: Record<string, string> = {
@@ -206,7 +208,7 @@ export default function PrestamoDetallePage() {
     }
   }
 
-  if (loading) return <div className="text-white text-center py-20">Cargando...</div>;
+  if (loading) return <LoadingScreen message="Cargando el préstamo..." />;
   if (!prestamo) {
     return (
       <div className="text-white text-center py-20">
@@ -303,7 +305,7 @@ export default function PrestamoDetallePage() {
                 disabled={guardandoEdit}
                 className="flex-1 bg-[#FF2E2E] hover:bg-red-700 text-white font-bold py-2 rounded disabled:opacity-50"
               >
-                {guardandoEdit ? "Guardando..." : "Guardar cambios"}
+                {guardandoEdit ? <LoadingDots size={5} color="#fff" /> : "Guardar cambios"}
               </button>
               <button
                 onClick={() => setEditando(false)}
@@ -504,7 +506,7 @@ export default function PrestamoDetallePage() {
                           disabled={guardando}
                           className="flex-1 bg-[#FF2E2E] hover:bg-red-700 text-white font-bold py-2 rounded disabled:opacity-50"
                         >
-                          {guardando ? "Guardando..." : "Confirmar pago"}
+                          {guardando ? <LoadingDots size={5} color="#fff" /> : "Confirmar pago"}
                         </button>
                         <button
                           onClick={resetFormularioPago}

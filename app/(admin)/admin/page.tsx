@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/db";
 import { suspendUser, reactivateUser } from "@/lib/auth";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 interface Subscription {
   user_id: string;
@@ -68,7 +69,13 @@ export default function AdminPage() {
     }
   }
 
-  if (loading) return <div className="text-white">Cargando...</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <LoadingDots />
+      </div>
+    );
+  }
 
   return (
     <div>

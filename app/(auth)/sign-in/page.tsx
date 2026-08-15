@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInUser } from "@/lib/auth";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
@@ -74,7 +75,7 @@ export default function SignInPage() {
               disabled={loading}
               className="w-full bg-[#FF2E2E] hover:bg-red-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
             >
-              {loading ? "Iniciando sesión..." : "Iniciar sesión"}
+              {loading ? <LoadingDots size={6} color="#fff" className="mx-auto" /> : "Iniciar sesión"}
             </button>
           </form>
 

@@ -1,16 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { crearPrestamoConCuotas } from "@/lib/prestamos";
 import { supabase } from "@/lib/db";
 import { formatCOP } from "@/lib/utils";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 export default function FormNuevoPrestamo() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [clienteNombre, setClienteNombre] = useState("");
-  const [capitalInicial, setCapitalInicial] = useState("");
-  const [tasaInteresMensual, setTasaInteresMensual] = useState("");
+  const [capitalInicial, setCapitalInicial] = useState(() => searchParams.get("capital") ?? "");
+  const [tasaInteresMensual, setTasaInteresMensual] = useState(() => searchParams.get("tasa") ?? "");
   const [fechaInicio, setFechaInicio] = useState(() => new Date().toISOString().slice(0, 10));
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -133,7 +135,7 @@ export default function FormNuevoPrestamo() {
         disabled={loading}
         className="w-full bg-[#FF2E2E] hover:bg-red-700 text-white font-bold text-lg py-4 px-4 rounded disabled:opacity-50"
       >
-        {loading ? "Registrando..." : "Registrar préstamo"}
+        {loading ? <LoadingDots size={6} color="#fff" /> : "Registrar préstamo"}
       </button>
     </form>
   );

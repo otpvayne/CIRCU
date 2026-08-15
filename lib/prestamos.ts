@@ -1,4 +1,5 @@
 import { addMonths, differenceInCalendarDays } from "date-fns";
+import { calcularMontosCuota } from "./amortizacion";
 import { supabase } from "./db";
 import type {
   Cuota,
@@ -32,9 +33,11 @@ export function calcularCuotasPrestamo(
   plazoMeses: number,
   fechaInicio: Date
 ): CuotaCalculada[] {
-  const interesMensual = capitalInicial * (tasaInteresMensual / 100);
-  const amortizacionCapital = capitalInicial / plazoMeses;
-  const cuotaTotal = interesMensual + amortizacionCapital;
+  const { interesMensual, amortizacionMensual, cuotaMensual } = calcularMontosCuota(
+    capitalInicial,
+    tasaInteresMensual,
+    plazoMeses
+  );
 
   return Array.from({ length: plazoMeses }, (_, i) => {
     const mes = i + 1;
@@ -42,8 +45,8 @@ export function calcularCuotasPrestamo(
       mes,
       fechaVencimiento: addMonths(fechaInicio, mes),
       interesMensual,
-      amortizacionCapital,
-      cuotaTotal,
+      amortizacionCapital: amortizacionMensual,
+      cuotaTotal: cuotaMensual,
     };
   });
 }

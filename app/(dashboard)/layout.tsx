@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { signOutUser } from "@/lib/auth";
 import { useState } from "react";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 export default function DashboardLayout({
   children,
@@ -26,15 +27,15 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen">
       <nav className="flex justify-between items-center p-4 bg-[#0D0D0D] border-b border-[#2C2C2C]">
         <h1 className="text-2xl font-bold text-white">CIRCU</h1>
         <button
           onClick={handleLogout}
           disabled={loading}
-          className="bg-[#FF2E2E] hover:bg-red-700 text-white px-4 py-2 rounded text-sm disabled:opacity-50"
+          className="flex items-center gap-2 bg-[#FF2E2E] hover:bg-red-700 text-white px-4 py-2 rounded text-sm disabled:opacity-50"
         >
-          {loading ? "Cerrando..." : "Cerrar sesión"}
+          {loading ? <LoadingDots size={5} color="#fff" /> : "Cerrar sesión"}
         </button>
       </nav>
       <main className="p-4">{children}</main>
