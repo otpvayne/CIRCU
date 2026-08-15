@@ -410,7 +410,7 @@ export async function eliminarPrestamo(prestamoId: string): Promise<void> {
 
   if ((cuotasConPago ?? []).length > 0) {
     throw new Error(
-      "No se puede eliminar: este préstamo tiene cuotas con pagos registrados. Usa archivarPrestamo en su lugar."
+      "Este préstamo ya tiene pagos registrados, así que no se puede eliminar (se perdería el historial). Puedes archivarlo para sacarlo del listado sin borrar nada."
     );
   }
 
