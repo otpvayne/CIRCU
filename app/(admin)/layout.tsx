@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
 import { signOutUser } from "@/lib/auth";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/db";
@@ -63,12 +64,20 @@ export default function AdminLayout({
           <Image src="/icons/icon-512.png" alt="CIRCU" width={32} height={32} className="rounded-lg" priority />
           <span className="text-xl font-bold text-[#FF2E2E] tracking-wide">ADMIN</span>
         </div>
-        <button
-          onClick={handleLogout}
-          className="bg-[#FF2E2E] hover:bg-red-700 text-white px-4 py-2 rounded text-sm"
-        >
-          Cerrar sesión
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="flex items-center gap-1.5 border border-[#2C2C2C] text-gray-400 hover:text-white hover:border-gray-500 px-3 py-2 rounded text-sm transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" /> Volver al Dashboard
+          </button>
+          <button
+            onClick={handleLogout}
+            className="bg-[#FF2E2E] hover:bg-red-700 text-white px-4 py-2 rounded text-sm"
+          >
+            Cerrar sesión
+          </button>
+        </div>
       </nav>
       <main className="p-4">{children}</main>
     </div>
