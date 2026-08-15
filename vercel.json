@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/notificar-vencimientos",
+      "schedule": "0 13 * * *"
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import {
   obtenerResumenGeneral,
 } from "@/lib/prestamos";
 import { fadeUp } from "@/lib/motion";
+import ActivarNotificaciones from "@/components/dashboard/ActivarNotificaciones";
 import ResumenCard from "@/components/dashboard/ResumenCard";
 import ProximasVencer from "@/components/dashboard/ProximasVencer";
 import ListaPrestamos from "@/components/dashboard/ListaPrestamos";
@@ -88,6 +89,8 @@ export default function DashboardPage() {
           {error}
         </div>
       )}
+
+      <ActivarNotificaciones />
 
       {resumen && (
         <motion.div custom={0.1} initial="hidden" animate="show" variants={fadeUp}>
