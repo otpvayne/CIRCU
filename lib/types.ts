@@ -83,3 +83,35 @@ export interface Documento {
   tamaño: number;
   created_at: string;
 }
+
+export type PeriodoResumenGastos = "semana" | "mes" | "año";
+
+export interface Gasto {
+  id: string;
+  user_id: string;
+  fecha: string;
+  descripcion: string;
+  monto: number;
+  categoria: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TotalPorCategoria {
+  categoria: string;
+  total: number;
+  porcentaje: number;
+}
+
+export interface ComparacionPeriodoGastos {
+  totalAnterior: number;
+  /** null cuando el período anterior no tiene gastos (variación porcentual no está definida). */
+  diferenciaPorcentual: number | null;
+}
+
+export interface ResumenGastos {
+  totalPeriodo: number;
+  totalPorCategoria: TotalPorCategoria[];
+  comparacionPeriodoAnterior: ComparacionPeriodoGastos;
+  promedioDiario: number;
+}

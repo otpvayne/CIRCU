@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { Calculator, Plus } from "lucide-react";
+import { Calculator, Plus, Receipt } from "lucide-react";
 import { supabase } from "@/lib/db";
 import {
   actualizarEstadosCuotasVencidas,
@@ -69,6 +69,12 @@ export default function DashboardPage() {
       >
         <h2 className="text-2xl font-bold text-white">Dashboard</h2>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.push("/gastos")}
+            className="flex items-center gap-1.5 border border-[#2C2C2C] text-gray-300 hover:text-white hover:border-gray-500 font-medium py-3 px-4 rounded-lg text-sm whitespace-nowrap transition-colors"
+          >
+            <Receipt className="w-4 h-4" /> Gastos
+          </button>
           <button
             onClick={() => router.push("/simulador")}
             className="flex items-center gap-1.5 border border-[#2C2C2C] text-gray-300 hover:text-white hover:border-gray-500 font-medium py-3 px-4 rounded-lg text-sm whitespace-nowrap transition-colors"

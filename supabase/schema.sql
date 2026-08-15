@@ -213,3 +213,25 @@ create policy "users manage own documentos storage" on storage.objects
   ) with check (
     bucket_id = 'documentos-prestamos' and (storage.foldername(name))[1] = auth.uid()::text
   );
+
+-- Gastos personales/operativos de José, independientes de los préstamos que él otorga.
+
+create table if not exists public.gastos (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null references auth.users (id) on delete cascade,
+  fecha        date not null,
+  descripcion  text not null,
+  monto        numeric not null check (monto > 0),
+  categoria    text,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+
+create index if not exists gastos_user_id_idx on public.gastos (user_id);
+create index if not exists gastos_user_id_fecha_idx on public.gastos (user_id, fecha);
+
+alter table public.gastos enable row level security;
+
+drop policy if exists "users manage own gastos" on public.gastos;
+create policy "users manage own gastos" on public.gastos
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { Shield } from "lucide-react";
+import { Receipt, Shield } from "lucide-react";
 import { signOutUser } from "@/lib/auth";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/db";
@@ -14,6 +14,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [loading, setLoading] = useState(false);
   const [rol, setRol] = useState<string | null>(null);
 
@@ -53,14 +54,24 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen">
-      <nav className="flex justify-between items-center p-4 bg-[#0D0D0D] border-b border-[#2C2C2C]">
-        <div className="flex items-center gap-2.5">
-          <Image src="/icons/icon-512.png" alt="CIRCU" width={36} height={36} className="rounded-lg" priority />
-          {rol === "admin" && (
-            <span className="text-xs font-bold text-red-300 bg-red-900 border border-red-700 px-2 py-0.5 rounded-full tracking-wide">
-              ADMIN
-            </span>
-          )}
+      <nav className="flex justify-between items-center gap-3 flex-wrap p-4 bg-[#0D0D0D] border-b border-[#2C2C2C]">
+        <div className="flex items-center gap-4">
+          <button onClick={() => router.push("/dashboard")} className="flex items-center gap-2.5" aria-label="Ir al inicio">
+            <Image src="/icons/icon-512.png" alt="CIRCU" width={36} height={36} className="rounded-lg" priority />
+            {rol === "admin" && (
+              <span className="text-xs font-bold text-red-300 bg-red-900 border border-red-700 px-2 py-0.5 rounded-full tracking-wide">
+                ADMIN
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => router.push("/gastos")}
+            className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
+              pathname === "/gastos" ? "text-white" : "text-gray-400 hover:text-white"
+            }`}
+          >
+            <Receipt className="w-4 h-4" /> Gastos
+          </button>
         </div>
         <div className="flex items-center gap-2">
           {rol === "admin" && (
