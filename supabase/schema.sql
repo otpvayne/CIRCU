@@ -164,3 +164,44 @@ alter table public.push_subscriptions enable row level security;
 drop policy if exists "users manage own push_subscriptions" on public.push_subscriptions;
 create policy "users manage own push_subscriptions" on public.push_subscriptions
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Documentos (constancias) por préstamo, respaldados en Supabase Storage (bucket "documentos-prestamos")
+
+create table if not exists public.documentos (
+  id              uuid primary key default gen_random_uuid(),
+  prestamo_id     uuid not null references public.prestamos (id) on delete cascade,
+  nombre_archivo  text not null,
+  url_archivo     text not null,
+  tipo_archivo    text not null,
+  tamaño          int not null,
+  created_at      timestamptz not null default now()
+);
+
+create index if not exists documentos_prestamo_id_idx on public.documentos (prestamo_id);
+
+alter table public.documentos enable row level security;
+
+-- Reemplaza una política legacy SELECT-only que quedó de una configuración manual anterior.
+drop policy if exists "Users can view their own documentos" on public.documentos;
+drop policy if exists "users manage own documentos" on public.documentos;
+create policy "users manage own documentos" on public.documentos
+  for all using (
+    exists (select 1 from public.prestamos where prestamos.id = documentos.prestamo_id and prestamos.user_id = auth.uid())
+  ) with check (
+    exists (select 1 from public.prestamos where prestamos.id = documentos.prestamo_id and prestamos.user_id = auth.uid())
+  );
+
+-- Storage: bucket privado "documentos-prestamos". Cada archivo vive en
+-- {user_id}/{prestamo_id}/{timestamp}-{nombre}, así que basta con exigir que el primer
+-- segmento del path coincida con auth.uid() para aislar a cada usuario de los demás.
+insert into storage.buckets (id, name, public)
+values ('documentos-prestamos', 'documentos-prestamos', false)
+on conflict (id) do nothing;
+
+drop policy if exists "users manage own documentos storage" on storage.objects;
+create policy "users manage own documentos storage" on storage.objects
+  for all using (
+    bucket_id = 'documentos-prestamos' and (storage.foldername(name))[1] = auth.uid()::text
+  ) with check (
+    bucket_id = 'documentos-prestamos' and (storage.foldername(name))[1] = auth.uid()::text
+  );

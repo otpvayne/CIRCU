@@ -18,6 +18,7 @@ import { fadeUp } from "@/lib/motion";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { LoadingDots } from "@/components/ui/LoadingDots";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
+import DocumentosPrestamo from "@/components/dashboard/DocumentosPrestamo";
 import type { Cuota, GananciaPrestamo, HistorialPago, MetodoPago, Prestamo } from "@/lib/types";
 
 const METODO_LABEL: Record<string, string> = {
@@ -535,6 +536,8 @@ export default function PrestamoDetallePage() {
           );
         })}
       </motion.div>
+
+      <DocumentosPrestamo prestamoId={prestamo.id} userId={prestamo.user_id} delay={0.4} />
     </div>
   );
 }

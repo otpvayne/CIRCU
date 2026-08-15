@@ -81,4 +81,5 @@ export interface Documento {
   url_archivo: string;
   tipo_archivo: string;
   tamaño: number;
+  created_at: string;
 }
