@@ -82,7 +82,7 @@ export default function FormNuevoPrestamo() {
           type="number"
           inputMode="numeric"
           min={1}
-          step="1000"
+          step="any"
           value={capitalInicial}
           onChange={(e) => setCapitalInicial(e.target.value)}
           className="w-full px-4 py-3 bg-[#0D0D0D] border border-[#2C2C2C] rounded text-white text-lg focus:outline-none focus:border-[#FF2E2E]"
@@ -102,7 +102,7 @@ export default function FormNuevoPrestamo() {
           type="number"
           inputMode="decimal"
           min={0.1}
-          step="0.1"
+          step="any"
           value={tasaInteresMensual}
           onChange={(e) => setTasaInteresMensual(e.target.value)}
           className="w-full px-4 py-3 bg-[#0D0D0D] border border-[#2C2C2C] rounded text-white text-lg focus:outline-none focus:border-[#FF2E2E]"
