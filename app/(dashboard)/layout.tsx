@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { signOutUser } from "@/lib/auth";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/db";
 import { LoadingDots } from "@/components/ui/LoadingDots";
 
 export default function DashboardLayout({
@@ -13,6 +14,28 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [rol, setRol] = useState<string | null>(null);
+
+  useEffect(() => {
+    let vigente = true;
+
+    // Consulta fresca a la tabla "users" en cada carga del navbar: nunca desde
+    // localStorage/sessionStorage ni de metadata cacheada del JWT de Supabase Auth.
+    async function cargarRol() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase.from("users").select("rol").eq("id", user.id).maybeSingle();
+      if (vigente) setRol(data?.rol?.trim() ?? null);
+    }
+
+    cargarRol();
+    return () => {
+      vigente = false;
+    };
+  }, []);
 
   async function handleLogout() {
     setLoading(true);
@@ -30,7 +53,14 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen">
       <nav className="flex justify-between items-center p-4 bg-[#0D0D0D] border-b border-[#2C2C2C]">
-        <Image src="/icons/icon-512.png" alt="CIRCU" width={36} height={36} className="rounded-lg" priority />
+        <div className="flex items-center gap-2.5">
+          <Image src="/icons/icon-512.png" alt="CIRCU" width={36} height={36} className="rounded-lg" priority />
+          {rol === "admin" && (
+            <span className="text-xs font-bold text-red-300 bg-red-900 border border-red-700 px-2 py-0.5 rounded-full tracking-wide">
+              ADMIN
+            </span>
+          )}
+        </div>
         <button
           onClick={handleLogout}
           disabled={loading}

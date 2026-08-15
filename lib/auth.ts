@@ -68,7 +68,7 @@ export async function getUserRole(userId: string) {
     .maybeSingle();
 
   if (error) throw error;
-  return data?.rol ?? "usuario";
+  return data?.rol?.trim() ?? "usuario";
 }
 
 export async function suspendUser(userId: string, razon: string) {

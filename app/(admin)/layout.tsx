@@ -33,7 +33,7 @@ export default function AdminLayout({
         .eq("id", user.id)
         .maybeSingle();
 
-      if (data?.rol === "admin") {
+      if (data?.rol?.trim() === "admin") {
         setIsAdmin(true);
       } else {
         router.push("/dashboard");

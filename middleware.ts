@@ -49,7 +49,7 @@ export async function middleware(request: NextRequest) {
       .eq("id", user.id)
       .maybeSingle();
 
-    if (userRow?.rol !== "admin") {
+    if (userRow?.rol?.trim() !== "admin") {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }

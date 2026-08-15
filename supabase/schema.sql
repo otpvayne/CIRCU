@@ -10,6 +10,14 @@ create table if not exists public.users (
   created_at timestamptz not null default now()
 );
 
+-- Idempotente: la tabla puede haber existido antes de este schema.sql (sin este check),
+-- en cuyo caso "create table if not exists" no lo agrega retroactivamente. Sin esta
+-- restricción, un typo o espacio al editar "rol" a mano en el Table Editor se guarda sin
+-- error y rompe la comparación exacta (=== "admin") en el código en tiempo de ejecución.
+alter table public.users drop constraint if exists users_rol_check;
+alter table public.users add constraint users_rol_check
+  check (rol in ('admin', 'usuario'));
+
 create table if not exists public.subscriptions (
   id                    uuid primary key default gen_random_uuid(),
   user_id               uuid not null references public.users (id) on delete cascade,
