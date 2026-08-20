@@ -19,7 +19,9 @@ function interesCobradoDeCuota(c: { estado: string; monto_pagado: number; cuota_
   if (c.estado !== "pagado" && c.estado !== "pagado_parcial") return 0;
   const cuotaTotal = Number(c.cuota_total);
   if (cuotaTotal <= 0) return 0;
-  const proporcion = Number(c.monto_pagado) / cuotaTotal;
+  // Math.min defiende contra proporcion > 1 (monto_pagado > cuota_total no debería pasar,
+  // pero si pasa por algún dato corrupto, el interés cobrado nunca debe superar el pactado).
+  const proporcion = Math.min(Number(c.monto_pagado) / cuotaTotal, 1);
   return proporcion * Number(c.interes_mensual);
 }
 
@@ -313,7 +315,12 @@ export async function registrarPagoCuota(
 
   let cuotaTotalAjustada = Number(cuota.cuota_total);
 
-  if (fechaPago < fechaVencimiento) {
+  if (fechaPago < fechaInicioMes) {
+    // Pago muy adelantado de una cuota cuyo período todavía no empieza (ej: se pagan varias
+    // cuotas futuras de una sola vez). El capital sigue prestado durante todo ese período
+    // futuro, así que se cobra el interés completo pactado — sin prorrateo negativo.
+    cuotaTotalAjustada = Number(cuota.interes_mensual) + Number(cuota.amortizacion_capital);
+  } else if (fechaPago < fechaVencimiento) {
     const interesProrrateado = calcularInteresProrrateado(
       Number(cuota.interes_mensual),
       fechaInicioMes,
@@ -321,6 +328,9 @@ export async function registrarPagoCuota(
     );
     cuotaTotalAjustada = interesProrrateado + Number(cuota.amortizacion_capital);
   }
+
+  // Salvaguarda: cuota_total nunca puede quedar por debajo de la amortización de capital.
+  cuotaTotalAjustada = Math.max(cuotaTotalAjustada, Number(cuota.amortizacion_capital));
 
   const montoTotalPagado = Number(cuota.monto_pagado) + montoPagado;
 
